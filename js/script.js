@@ -1,52 +1,18 @@
 var app = new Router({
     onContentElementInserted: function(element) {
-
-        var count = 0;
-
-        function loaded() {
-            count--;
-            if (count <= 0) {            
-                if (element.querySelector('pre[data-src]')) {
-                    window.Prism.fileHighlight();        
-                };
-            }
+        if (element.querySelector('pre[data-src]')) {
+            window.Prism.fileHighlight();        
         };
-
-        var elements = element.querySelectorAll('script[src]');
-        if (elements.length > 0) {
-            [].forEach.call(elements, function(element) {
-                var src = element.getAttribute("src");
-                if (!document.querySelector('head > script[src="' + src +  '"]' )) {
-                    var script = document.createElement('script');
-                    script.setAttribute('type', 'text/javascript');
-                    count++;
-                    script.onload = loaded;
-                    script.setAttribute('src', src);
-                    document.head.appendChild(script);                    
-                }            
-            });
-        }
-        else {
-            loaded();
-        }
-
-            
-
-
-
-
-
-
-        
-
-
-
-
-
     }
 });
 
-
+/**
+ * Simple Client-Side SPA Router (no backend required) 
+ * expecting index.html with #header, #content and #footer tags
+ * The folder structure represents 1:1 the routes 
+ * Each folder must contain at least one file called content.html 
+ * @param { { onContentElementInserted: function(Element): void  }  } config 
+ */
 function Router(config) {
     
     this.navigateToLink = function (event) {   
@@ -60,7 +26,7 @@ function Router(config) {
     documentReady(function() {
         // browser url-normalization: remove trailing "/" (on sub-pages only)
         if (document.location.pathname.length > 1 &&  endsWith(document.location.pathname,'/')) {
-            history.replaceState(null, document.title, document.location.pathname.slice(0,-1));
+            history.replaceState(null, document.title, document.location.pathname.slice(0,-1));            
         }
                 
         // insert the current content (based on the url)
@@ -86,17 +52,59 @@ function Router(config) {
             console.log('cache');
             resolve();
         } else {
-            fileUrl = endsWith(path,'/') ? "/main.html" : path + '/content.html';
+            fileUrl = endsWith(path,'/') ? "/content.html" : path + '/content.html';
             HttpGetRequest(fileUrl, function(html) {
                 console.log("load");
                 let content = document.querySelector('#content');
-                content.insertAdjacentHTML('beforeend', html);
-                content.lastElementChild.id = path;
-                if(config.onContentElementInserted) {
-                    config.onContentElementInserted(content.lastElementChild);
-                }          
-                resolve();
+                content.insertAdjacentHTML('beforeend', html);  // according to HTML5 this "insert" does  
+                content.lastElementChild.id = path;             // not activate contained script-tags 
+                // fetch contained script-tags happens here
+                fetchElementScripts(content.lastElementChild, function(el) {
+                    if(config.onContentElementInserted) {
+                        config.onContentElementInserted(el);
+                    }    
+                    resolve();
+                });
+                        
             }, function(error) {});            
+        }
+    }
+
+    /**
+     * Fetch all script tags within the content element and add them to the head tag if not fetched jet
+     * complete is called back when head is updated or already completed an the script-code can be used
+     * @param {Element} element 
+     * @param {function(Element):void} complete 
+     */
+    function fetchElementScripts(element, complete) {
+        var elementScripts = element.querySelectorAll('script[src]');
+        var remaining = elementScripts.length;
+        
+        function loaded() {
+            remaining--;
+            if (remaining <= 0) {
+                complete(element);
+            }
+        };
+        
+        if (elementScripts.length > 0) {
+            [].forEach.call(elementScripts, function(script) {
+                var src = script.getAttribute("src");
+                if (!document.querySelector('head > script[src="' + src +  '"]' )) {        
+                    console.log(script);
+                    var headChild = document.createElement('script');
+                    headChild.setAttribute('type', 'text/javascript');
+                    headChild.onload = loaded;
+                    headChild.setAttribute('src', src);
+                    document.head.appendChild(headChild);                          
+                }
+                else {
+                    loaded();
+                }                  
+            });
+        }
+        else {
+            loaded();
         }
     }
 
