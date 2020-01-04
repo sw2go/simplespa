@@ -1,8 +1,23 @@
+
+window.hljs.initHighlightingOnLoad();
+
+
 var app = new Router({
     onContentElementInserted: function(element) {
         if (element.querySelector('pre[data-src]')) {
             window.Prism.fileHighlight();        
         };
+    },
+    onMarkdownRender: function(markup) {
+        var md = window.markdownit({
+            highlight: function(str, lang) {
+                var result = window.Prism.highlight(str, window.Prism.languages.javascript, lang);
+                console.log(result);
+                return result;
+                return window.hljs.highlight(lang, str).value;
+            }
+        });
+        return md.render(markup);        
     }
 });
 
@@ -11,10 +26,10 @@ var app = new Router({
  * expecting index.html with #header, #content and #footer tags
  * The folder structure represents 1:1 the routes 
  * Each folder must contain at least one file called content.html 
- * @param { { onContentElementInserted: function(Element): void  }  } config 
+ * @param { { onContentElementInserted: function(Element): void, onMarkdownRender: function(string): string}  } config 
  */
 function Router(config) {
-    
+
     this.navigateToLink = function (event) {   
         event.preventDefault();
         fetchContent(event.target.pathname, function () {
@@ -24,6 +39,7 @@ function Router(config) {
     }
 
     documentReady(function() {
+
         // browser url-normalization: remove trailing "/" (on sub-pages only)
         if (document.location.pathname.length > 1 &&  endsWith(document.location.pathname,'/')) {
             history.replaceState(null, document.title, document.location.pathname.slice(0,-1));            
@@ -52,10 +68,11 @@ function Router(config) {
             console.log('cache');
             resolve();
         } else {
-            fileUrl = endsWith(path,'/') ? "/content.html" : path + '/content.html';
-            HttpGetRequest(fileUrl, function(html) {
-                console.log("load");
-                let content = document.querySelector('#content');
+            let content = document.querySelector('#content');
+            fileUrl = endsWith(path,'/') ? "/content" : path + '/content';
+            console.log(fileUrl);
+            HttpGetRequest(fileUrl +'.html', function(html) {
+                console.log("load html");                
                 content.insertAdjacentHTML('beforeend', html);  // according to HTML5 this "insert" does  
                 content.lastElementChild.id = path;             // not activate contained script-tags 
                 // fetch contained script-tags happens here
@@ -66,7 +83,19 @@ function Router(config) {
                     resolve();
                 });
                         
-            }, function(error) {});            
+            }, function(error) {
+                HttpGetRequest(fileUrl + '.md', function(markdown) {
+                    console.log("load md");
+                    var html = (config.onMarkdownRender) 
+                    ? config.onMarkdownRender(markdown) 
+                    : "<p>No Markdown Rederer attached</p>"
+                    var div = document.createElement('div');
+                    div.insertAdjacentHTML('beforeend', html);
+                    div.id = path;
+                    content.insertAdjacentElement('beforeend', div);
+                    resolve();
+                }, function(error){});
+            });            
         }
     }
 
