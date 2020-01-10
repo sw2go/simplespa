@@ -10,11 +10,30 @@ var app = new Router({
     },
     onMarkdownRender: function(markup) {
         var md = window.markdownit({
+            html: true,
+            linkify: true,
+            typographer: true,
             highlight: function(str, lang) {
-                var result = window.Prism.highlight(str, window.Prism.languages.javascript, lang);
-                console.log(result);
-                return result;
-                return window.hljs.highlight(lang, str).value;
+
+                var grammar = window.Prism.languages[lang];
+
+                if(grammar) {
+                    var result = '<pre class="language-' + lang + '"><code>' + 
+                    window.Prism.highlight(str, grammar, lang) +
+                    '</code></pre>';
+                    console.log(result);
+                    return result;
+                }
+                else {
+                    return str;
+                }
+                
+
+
+
+
+
+                
             }
         });
         return md.render(markup);        
@@ -89,6 +108,7 @@ function Router(config) {
                     var html = (config.onMarkdownRender) 
                     ? config.onMarkdownRender(markdown) 
                     : "<p>No Markdown Rederer attached</p>"
+
                     var div = document.createElement('div');
                     div.insertAdjacentHTML('beforeend', html);
                     div.id = path;
@@ -98,6 +118,7 @@ function Router(config) {
             });            
         }
     }
+
 
     /**
      * Fetch all script tags within the content element and add them to the head tag if not fetched jet
