@@ -1,5 +1,5 @@
 
-window.hljs.initHighlightingOnLoad();
+
 
 
 var app = new Router({

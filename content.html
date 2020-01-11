@@ -1,6 +1,38 @@
 
 <div>    
     <h1>Main Page</h1>
+
+    <h2>Dynamisch geladener Inhalt</h2>
+    <h3>Content.html</h3>
+    <ul>
+        <li>
+            scripts im HTML werden in den head des body kopiert damit sie ausgeführt werden können, denn insertAdjacentHTML macht diese nicht aktiv.
+        </li>
+        <li>
+            links auf stylesheets gehen auch ohne kopieren. Werden nach dem insertAdjacentHTML() bereits wirksam.
+        </li>
+    </ul>
+   
+    
+    <h3>Content.md</h3>
+    <ul>
+        <li>
+            Im markdown gibt es weder scripts noch styles, d.h. die nötigen Einträge im head müssen schon da sein.
+        </li>
+    </ul>
+    
+    <h3>Ideen</h3>
+    <ul>
+        <li>
+            für SPA lokale href beim Laden des Content automatisch einschreiben auf onclick="app.navigateToLink(event)"
+        </li>
+        <li>
+            Urls im Content (auch .md) die relativ sind den Pfad des Content berücksichtigen und die Url auf absolut umschreiben.
+            Dadurch kann man Bilder etc. einfach direkt neben dem Content.md /.html abglegen und die Resource kann geladen werden.
+        </li>
+    </ul>
+    
+
 </div>
 
 
